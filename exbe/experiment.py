@@ -3,6 +3,8 @@ import json
 import os
 import time
 
+import tqdm
+
 
 class Timer:
     def __init__(self):
@@ -68,10 +70,15 @@ class Results:
 
 class Experiment(abc.ABC):
     # TODO: add some reset mechanism?
-    # TODO: add some id?
 
     def __init__(
-        self, n_trials=3, timer=None, results=None, metadata=None, serializer=None
+        self,
+        n_trials=3,
+        timer=None,
+        results=None,
+        metadata=None,
+        serializer=None,
+        n_conditions=None,
     ):
         self.n_trials = n_trials
 
@@ -91,6 +98,7 @@ class Experiment(abc.ABC):
         self.results = results
         self.metadata = metadata
         self.serializer = serializer
+        self.n_conditions = n_conditions
 
         self._update_metadata()
 
@@ -112,7 +120,12 @@ class Experiment(abc.ABC):
     def run_trials(self):
         # TODO: allow for (optional) failures while continuing running
         self.results.current = False
-        for trial_index in range(self.n_trials):
+
+        trials = range(self.n_trials)
+        if self.n_trials > 1:
+            tqdm.tqdm(trials, desc="inner", position=1)
+
+        for trial_index in trials:
             self.before_trial(trial_index)
 
             self.timer.start()
@@ -131,8 +144,10 @@ class Experiment(abc.ABC):
     def run(self):
         # TODO: return False if not successful
         # must be at trial level
-        while self.next_condition():
-            self.run_trials()
+        with tqdm.tqdm(total=self.n_conditions, desc="outer", position=0) as pbar:
+            while self.next_condition():
+                self.run_trials()
+                pbar.update(1)
 
     def to_dict(self, ignore=False):
         data = {"metadata": self.metadata.copy()}
