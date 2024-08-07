@@ -1,4 +1,4 @@
-def _get_value(datum, name):
+def get_value_by_name(datum, name):
     names = name.split("/")
     value = datum
     for name in names:
@@ -7,20 +7,22 @@ def _get_value(datum, name):
     return value
 
 
-def filter_by_eq(name, value):
+def filter_by_func(name, func):
     def filter_(datum):
-        cmp_value = _get_value(datum, name)
-        return cmp_value == value
+        cmp_value = get_value_by_name(datum, name)
+        return func(cmp_value)
 
     return filter_
+
+
+def filter_by_eq(name, value):
+    # syntax sugar only
+    return filter_by_func(name, lambda cmp_value: cmp_value == value)
 
 
 def filter_by_is(name, value):
-    def filter_(datum):
-        cmp_value = _get_value(datum, name)
-        return cmp_value is value
-
-    return filter_
+    # syntax sugar only
+    return filter_by_func(name, lambda cmp_value: cmp_value is value)
 
 
 def apply_filters(data, filters):
